@@ -39,11 +39,14 @@ class SFDDetector(FaceDetector):
         return bboxlist
 
     def detect_from_batch(self, images):
+        print('Entering detect_from_batch')
         bboxlists = batch_detect(self.face_detector, images, device=self.device)
+        print(f'Found {len(bboxlists)} bounding boxes')
         keeps = [nms(bboxlists[:, i, :], 0.3) for i in range(bboxlists.shape[1])]
         bboxlists = [bboxlists[keep, i, :] for i, keep in enumerate(keeps)]
         bboxlists = [[x for x in bboxlist if x[-1] > 0.5] for bboxlist in bboxlists]
 
+        print(f'{len(bboxlists)} bounding boxes remain after filtering')
         return bboxlists
 
     @property

@@ -3,7 +3,8 @@ import sys
 if sys.version_info[0] < 3 and sys.version_info[1] < 2:
 	raise Exception("Must be using >= Python 3.2")
 
-from os import listdir, path
+from os import listdir, path, environ
+environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 if not path.isfile('face_detection/detection/sfd/s3fd.pth'):
 	raise FileNotFoundError('Save the s3fd model to face_detection/detection/sfd/s3fd.pth \
@@ -46,6 +47,7 @@ def process_video_file(vfile, args, gpu_id):
 			break
 		frames.append(frame)
 	
+	print(f'Detected {len(frames)} from {vfile}')
 	vidname = os.path.basename(vfile).split('.')[0]
 	dirname = vfile.split('/')[-2]
 
@@ -56,7 +58,9 @@ def process_video_file(vfile, args, gpu_id):
 
 	i = -1
 	for fb in batches:
+		print(f'Getting detections for batch from file {vfile}, gpu/face_alignment id {gpu_id}')
 		preds = fa[gpu_id].get_detections_for_batch(np.asarray(fb))
+		print(f'{len(preds)} predictions returned for {vfile}, gpu/face_alignment id {gpu_id}')
 
 		for j, f in enumerate(preds):
 			i += 1
@@ -84,14 +88,17 @@ def mp_handler(job):
 	try:
 		process_video_file(vfile, args, gpu_id)
 	except KeyboardInterrupt:
+		print(f'Keyboard interrupt while processing {vfile} on gpu {gpu_id}')
 		exit(0)
 	except:
+		print(f'Error while processing {vfile} on gpu {gpu_id}')
 		traceback.print_exc()
 		
 def main(args):
 	print('Started processing for {} with {} GPUs'.format(args.data_root, args.ngpu))
 
 	filelist = glob(path.join(args.data_root, '*/*.mp4'))
+	print(f'{len(filelist)} videos found in data_root')
 
 	jobs = [(vfile, args, i%args.ngpu) for i, vfile in enumerate(filelist)]
 	p = ThreadPoolExecutor(args.ngpu)

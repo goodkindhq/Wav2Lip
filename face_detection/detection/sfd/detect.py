@@ -17,17 +17,23 @@ from .bbox import *
 
 
 def detect(net, img, device):
+    print(f'Beginning detect with net {net} on device {device}')
     img = img - np.array([104, 117, 123])
     img = img.transpose(2, 0, 1)
     img = img.reshape((1,) + img.shape)
+    print('Normalized, transposed and reshaped image')
 
     if 'cuda' in device:
         torch.backends.cudnn.benchmark = True
+        print('Cuda benchmarking enabled')
 
     img = torch.from_numpy(img).float().to(device)
+    print(f'Copy image to torch on device {device}')
     BB, CC, HH, WW = img.size()
+    print(f'Image tensor size is {[BB, CC, HH, WW]}')
     with torch.no_grad():
         olist = net(img)
+        print(f'Returned {len(olist)} coordinates from detect inference')
 
     bboxlist = []
     for i in range(len(olist) // 2):
@@ -53,19 +59,26 @@ def detect(net, img, device):
     if 0 == len(bboxlist):
         bboxlist = np.zeros((1, 5))
 
+    print(f'Returned {len(bboxlist)} bounding boxes from detect inference')
     return bboxlist
 
 def batch_detect(net, imgs, device):
+    print(f'Beginning batch_detect with net {net} on device {device}')
     imgs = imgs - np.array([104, 117, 123])
     imgs = imgs.transpose(0, 3, 1, 2)
+    print('Normalized and transposed image batch')
 
     if 'cuda' in device:
         torch.backends.cudnn.benchmark = True
+        print('Cuda benchmarking enabled')
 
     imgs = torch.from_numpy(imgs).float().to(device)
+    print(f'Copy image to torch on device {device}')
     BB, CC, HH, WW = imgs.size()
+    print(f'Image tensor size is {[BB, CC, HH, WW]}')
     with torch.no_grad():
         olist = net(imgs)
+        print(f'Returned {len(olist)} coordinates from detect inference')
 
     bboxlist = []
     for i in range(len(olist) // 2):
@@ -91,6 +104,7 @@ def batch_detect(net, imgs, device):
     if 0 == len(bboxlist):
         bboxlist = np.zeros((1, BB, 5))
 
+    print(f'Returned {len(bboxlist)} bounding boxes from detect inference')
     return bboxlist
 
 def flip_detect(net, img, device):
